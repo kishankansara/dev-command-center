@@ -11,35 +11,67 @@ interface PassphraseModalProps {
 }
 
 export function PassphraseModal({ isOpen, onClose }: PassphraseModalProps) {
-  const { unlockVault, isUnlocked } = useCrypto();
+  const { isVaultSetup, isUnlocked, unlockVault, setupVault } = useCrypto();
   const { toast } = useToast();
+
   const [passphrase, setPassphrase] = useState('');
+  const [confirmPassphrase, setConfirmPassphrase] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!passphrase.trim()) {
-      toast('Please enter your master passphrase', 'error');
+    setErrorMessage(null);
+
+    const trimmed = passphrase.trim();
+    if (!trimmed) {
+      setErrorMessage('Please enter your master passphrase');
       return;
     }
-    if (passphrase.length < 8) {
-      toast('Master passphrase should be at least 8 characters', 'error');
+    if (trimmed.length < 8) {
+      setErrorMessage('Master passphrase must be at least 8 characters long');
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      unlockVault(passphrase.trim());
-      toast('Zero-Knowledge Vault unlocked in memory', 'success');
-      setPassphrase('');
-      onClose();
-    } catch {
-      toast('Failed to initialize cryptographic vault', 'error');
-    } finally {
-      setIsSubmitting(false);
+    if (!isVaultSetup) {
+      // First-time setup mode
+      if (trimmed !== confirmPassphrase.trim()) {
+        setErrorMessage('Passphrases do not match. Please re-confirm.');
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        await setupVault(trimmed);
+        toast('Zero-Knowledge Vault initialized and unlocked!', 'success');
+        setPassphrase('');
+        setConfirmPassphrase('');
+        onClose();
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Failed to initialize vault';
+        setErrorMessage(msg);
+        toast(msg, 'error');
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      // Unlock mode
+      setIsSubmitting(true);
+      try {
+        await unlockVault(trimmed);
+        toast('Zero-Knowledge Vault unlocked in memory', 'success');
+        setPassphrase('');
+        setConfirmPassphrase('');
+        onClose();
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Invalid master passphrase';
+        setErrorMessage(msg);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -58,9 +90,15 @@ export function PassphraseModal({ isOpen, onClose }: PassphraseModalProps) {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-slate-100">
-                  {isUnlocked ? 'Update Master Passphrase' : 'Unlock Zero-Knowledge Vault'}
+                  {!isVaultSetup
+                    ? 'Set Up Master Passphrase'
+                    : isUnlocked
+                    ? 'Vault Unlocked'
+                    : 'Unlock Zero-Knowledge Vault'}
                 </h3>
-                <p className="text-xs text-slate-400">Client-Side PBKDF2 & AES-GCM-256</p>
+                <p className="text-xs text-slate-400">
+                  {!isVaultSetup ? 'Initialize PBKDF2 & Cryptographic Canary' : 'Client-Side PBKDF2 & AES-GCM-256'}
+                </p>
               </div>
             </div>
             <button
@@ -77,21 +115,34 @@ export function PassphraseModal({ isOpen, onClose }: PassphraseModalProps) {
               <span>Zero-Knowledge Security Invariant</span>
             </div>
             <p className="text-slate-400 text-[11px] leading-relaxed">
-              Your master passphrase is never transmitted over the network or saved to disk. It is stored exclusively in transient volatile heap memory.
+              {!isVaultSetup
+                ? 'Your master passphrase is never sent to the server. A cryptographic canary is stored to verify your key locally without exposing your secret.'
+                : 'Your master passphrase is never transmitted over the network or saved to disk. It is stored exclusively in transient volatile heap memory.'}
             </p>
           </div>
+
+          {/* Error Badge */}
+          {errorMessage && (
+            <div className="mt-4 p-3 rounded-lg bg-rose-950/60 border border-rose-500/40 flex items-center gap-2.5 text-xs text-rose-300 animate-shake">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div>
               <label className="block text-xs font-mono font-medium text-slate-300 mb-1.5">
-                MASTER ENCRYPTION PASSPHRASE
+                {!isVaultSetup ? 'NEW MASTER ENCRYPTION PASSPHRASE' : 'MASTER ENCRYPTION PASSPHRASE'}
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={passphrase}
-                  onChange={(e) => setPassphrase(e.target.value)}
-                  placeholder="Enter your master secret passphrase..."
+                  onChange={(e) => {
+                    setPassphrase(e.target.value);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                  placeholder={!isVaultSetup ? 'Create strong master passphrase (min 8 chars)...' : 'Enter your master secret passphrase...'}
                   autoFocus
                   className="w-full pl-3 pr-10 py-2.5 bg-command-950 border border-command-border rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/80 font-mono transition-all"
                 />
@@ -104,6 +155,27 @@ export function PassphraseModal({ isOpen, onClose }: PassphraseModalProps) {
                 </button>
               </div>
             </div>
+
+            {/* Confirm Passphrase Field for Initial Setup */}
+            {!isVaultSetup && (
+              <div>
+                <label className="block text-xs font-mono font-medium text-slate-300 mb-1.5">
+                  CONFIRM MASTER PASSPHRASE
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={confirmPassphrase}
+                    onChange={(e) => {
+                      setConfirmPassphrase(e.target.value);
+                      if (errorMessage) setErrorMessage(null);
+                    }}
+                    placeholder="Re-enter master passphrase..."
+                    className="w-full pl-3 pr-10 py-2.5 bg-command-950 border border-command-border rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/80 font-mono transition-all"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="pt-2 flex items-center justify-end gap-2">
               <button
@@ -119,7 +191,15 @@ export function PassphraseModal({ isOpen, onClose }: PassphraseModalProps) {
                 className="flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-semibold shadow-md shadow-emerald-700/20 transition-all disabled:opacity-50"
               >
                 <KeyRound className="w-4 h-4" />
-                <span>{isUnlocked ? 'Update Passphrase' : 'Unlock Vault'}</span>
+                <span>
+                  {isSubmitting
+                    ? 'Processing...'
+                    : !isVaultSetup
+                    ? 'Initialize Vault'
+                    : isUnlocked
+                    ? 'Vault Unlocked'
+                    : 'Unlock Vault'}
+                </span>
               </button>
             </div>
           </form>

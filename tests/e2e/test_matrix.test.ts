@@ -126,4 +126,77 @@ describe('IEEE 830-1998 Acceptance & Test Matrix Verification', () => {
     assert.strictEqual(anonListing.length, 0, 'Anon user must receive 0 rows');
   });
 
+  /**
+   * TC-ZK-01: Multi-Tenant Zero-Knowledge Canary Verification & Passphrase Change
+   * Verify User A and User B derive independent salts/canaries,
+   * neither can unlock the other's vault, and passphrase change re-encrypts all secrets.
+   */
+  it('TC-ZK-01: Multi-tenant canary verification isolation & secret re-encryption', async () => {
+    const { generateSalt, deriveKey, encryptData, decryptData, verifyPassphrase, CANARY_PAYLOAD } =
+      await import('../../packages/crypto-core/src/index');
+
+    // 1. User A sets up vault
+    const userAPass = 'UserA#Passphrase2026';
+    const userASalt = generateSalt();
+    const userAKey = await deriveKey(userAPass, userASalt);
+    const userACanary = await encryptData(CANARY_PAYLOAD, userAKey);
+
+    // 2. User B sets up vault
+    const userBPass = 'UserB#SecretPassphrase2026';
+    const userBSalt = generateSalt();
+    const userBKey = await deriveKey(userBPass, userBSalt);
+    const userBCanary = await encryptData(CANARY_PAYLOAD, userBKey);
+
+    // 3. Independent salts
+    assert.notStrictEqual(userASalt, userBSalt);
+
+    // 4. User A unlocks User A's vault -> Success
+    const verifyA = await verifyPassphrase(userAPass, userASalt, userACanary);
+    assert.strictEqual(verifyA.valid, true);
+    assert.ok(verifyA.key);
+
+    // 5. User B cannot unlock User A's vault
+    const verifyBagainstA = await verifyPassphrase(userBPass, userASalt, userACanary);
+    assert.strictEqual(verifyBagainstA.valid, false);
+
+    // 6. User A cannot unlock User B's vault
+    const verifyAagainstB = await verifyPassphrase(userAPass, userBSalt, userBCanary);
+    assert.strictEqual(verifyAagainstB.valid, false);
+
+    // 7. Secret Re-Encryption Flow for User A
+    const rawSecret = 'stripe_prod_sk_live_992810482910482';
+    const encryptedWithOldKey = await encryptData(rawSecret, userAKey);
+
+    // Change passphrase to new passphrase
+    const userANewPass = 'UserA#NewPassphrase2027!';
+    const userANewSalt = generateSalt();
+    const userANewKey = await deriveKey(userANewPass, userANewSalt);
+    const userANewCanary = await encryptData(CANARY_PAYLOAD, userANewKey);
+
+    // Decrypt with old key, re-encrypt with new key
+    const decryptedWithOldKey = await decryptData(encryptedWithOldKey, userAKey);
+    assert.strictEqual(decryptedWithOldKey, rawSecret);
+
+    const reEncryptedWithNewKey = await encryptData(decryptedWithOldKey, userANewKey);
+
+    // Verify old key fails on newly encrypted secret
+    await assert.rejects(
+      async () => {
+        await decryptData(reEncryptedWithNewKey, userAKey);
+      },
+      /operation failed|tag|authentication|decrypt/i
+    );
+
+    // Verify new key successfully decrypts
+    const finalDecrypted = await decryptData(reEncryptedWithNewKey, userANewKey);
+    assert.strictEqual(finalDecrypted, rawSecret);
+
+    // Verify new canary works with new passphrase and fails with old passphrase
+    const newCanaryCheck = await verifyPassphrase(userANewPass, userANewSalt, userANewCanary);
+    assert.strictEqual(newCanaryCheck.valid, true);
+
+    const oldPassCheck = await verifyPassphrase(userAPass, userANewSalt, userANewCanary);
+    assert.strictEqual(oldPassCheck.valid, false);
+  });
+
 });

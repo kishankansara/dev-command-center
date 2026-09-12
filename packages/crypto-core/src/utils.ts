@@ -48,3 +48,27 @@ export function stringToBytes(str: string): Uint8Array {
 export function bytesToString(bytes: Uint8Array): string {
   return new TextDecoder().decode(bytes);
 }
+
+export function bytesToHex(bytes: Uint8Array): string {
+  let hex = '';
+  for (let i = 0; i < bytes.length; i++) {
+    hex += bytes[i].toString(16).padStart(2, '0');
+  }
+  return hex;
+}
+
+export function hexToBytes(hex: string): Uint8Array {
+  const cleanHex = hex.replace(/^0x/, '');
+  const bytes = new Uint8Array(cleanHex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(cleanHex.substring(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+/**
+ * Generates a random 16-byte cryptographic salt in hex
+ */
+export function generateSalt(): string {
+  return bytesToHex(generateRandomBytes(16));
+}

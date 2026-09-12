@@ -12,6 +12,14 @@ export interface EncryptedPayload {
   ct: string;   // Base64 encoded ciphertext + 128-bit authentication tag
 }
 
+export interface UserVaultSettings {
+  user_id: string;
+  vault_salt: string;   // Hex encoded random 16-byte salt for PBKDF2
+  vault_canary: string; // Ciphertext envelope of the string "VAULT_CANARY_VALID"
+  created_at?: string;
+  updated_at?: string;
+}
+
 export type ServiceProvider = 'Gmail' | 'Outlook' | 'ProtonMail' | 'Zoho' | 'Custom' | string;
 
 export interface Account {

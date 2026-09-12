@@ -11,4 +11,5 @@ export const CRYPTO_CONSTANTS = {
   IV_BYTES: 12,        // 96 bits standard for AES-GCM
   TAG_LENGTH: 128,     // 128 bits authentication tag
   PAYLOAD_VERSION: 1,
+  CANARY_PAYLOAD: 'VAULT_CANARY_VALID',
 } as const;

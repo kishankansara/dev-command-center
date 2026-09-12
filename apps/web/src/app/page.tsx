@@ -26,6 +26,7 @@ import { ProjectCard } from '@/components/ProjectCard';
 import { AccountCard } from '@/components/AccountCard';
 import { PortabilityView } from '@/components/PortabilityView';
 import { PassphraseModal } from '@/components/PassphraseModal';
+import { VaultSettingsModal } from '@/components/VaultSettingsModal';
 import { ProjectModal } from '@/components/ProjectModal';
 import { AccountModal } from '@/components/AccountModal';
 import { CredentialVaultModal } from '@/components/CredentialVaultModal';
@@ -56,6 +57,7 @@ export default function DashboardPage() {
 
   // Modal states
   const [isPassphraseModalOpen, setIsPassphraseModalOpen] = useState(false);
+  const [isVaultSettingsModalOpen, setIsVaultSettingsModalOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
@@ -136,6 +138,7 @@ export default function DashboardPage() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onOpenPassphraseModal={() => setIsPassphraseModalOpen(true)}
+        onOpenVaultSettingsModal={() => setIsVaultSettingsModalOpen(true)}
         onOpenNewProjectModal={() => {
           setEditingProject(null);
           setIsProjectModalOpen(true);
@@ -364,6 +367,11 @@ export default function DashboardPage() {
       <PassphraseModal
         isOpen={isPassphraseModalOpen}
         onClose={() => setIsPassphraseModalOpen(false)}
+      />
+
+      <VaultSettingsModal
+        isOpen={isVaultSettingsModalOpen}
+        onClose={() => setIsVaultSettingsModalOpen(false)}
       />
 
       <ProjectModal

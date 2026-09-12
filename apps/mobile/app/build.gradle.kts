@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -51,6 +52,7 @@ dependencies {
     // Coroutines & Lifecycle
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

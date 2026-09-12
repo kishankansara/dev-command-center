@@ -10,6 +10,7 @@ interface NavigationProps {
   activeTab: 'projects' | 'accounts' | 'export';
   setActiveTab: (tab: 'projects' | 'accounts' | 'export') => void;
   onOpenPassphraseModal: () => void;
+  onOpenVaultSettingsModal: () => void;
   onOpenNewProjectModal: () => void;
   onOpenNewAccountModal: () => void;
 }
@@ -18,17 +19,30 @@ export function Navigation({
   activeTab,
   setActiveTab,
   onOpenPassphraseModal,
+  onOpenVaultSettingsModal,
   onOpenNewProjectModal,
   onOpenNewAccountModal,
 }: NavigationProps) {
-  const { isUnlocked, lockVault } = useCrypto();
+  const { isUnlocked, isVaultSetup, lockVault } = useCrypto();
   const { isRealtimeActive, projects, accounts } = useData();
   const { user, signOut } = useAuth();
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = React.useState(false);
+  const profileMenuRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-command-border bg-command-950/95 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
-        <div className="flex flex-nowrap items-center justify-between h-14 gap-2 overflow-x-auto no-scrollbar">
+        <div className="flex flex-nowrap items-center justify-between h-14 gap-2">
           {/* Brand Logo & Platform Title */}
           <div className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-500 flex items-center justify-center shadow-md shadow-emerald-500/20 shrink-0">
@@ -107,7 +121,7 @@ export function Navigation({
                 className="flex items-center gap-1 px-2 py-1 rounded-md bg-amber-950/60 border border-amber-600/40 text-amber-300 hover:bg-amber-900/50 text-xs font-mono font-medium transition-all whitespace-nowrap shrink-0"
               >
                 <ShieldAlert className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="hidden md:inline">Unlock Vault</span>
+                <span className="hidden md:inline">{isVaultSetup ? 'Unlock Vault' : 'Set Up Vault'}</span>
               </button>
             )}
 
@@ -130,22 +144,48 @@ export function Navigation({
               </button>
             ) : null}
 
-            {/* Authenticated User Session & Sign Out */}
+            {/* Profile Dropdown Menu */}
             {user && (
-              <div className="flex items-center gap-1.5 pl-1.5 border-l border-command-border/60 shrink-0">
-                <span className="hidden lg:inline text-[11px] font-mono text-slate-300 truncate max-w-[130px] whitespace-nowrap">
-                  {user.email}
-                </span>
+              <div className="relative pl-1.5 border-l border-command-border/60 shrink-0" ref={profileMenuRef}>
                 <button
-                  onClick={async () => {
-                    await signOut();
-                    window.location.href = '/login';
-                  }}
-                  className="p-1 rounded-md bg-command-900 hover:bg-rose-950/60 hover:text-rose-400 text-slate-400 transition-colors border border-command-border shrink-0"
-                  title="Sign Out"
+                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-command-900 hover:bg-command-800 border border-command-border text-xs font-mono text-slate-200 transition-colors"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span className="max-w-[110px] truncate">{user.email?.split('@')[0] || 'Profile'}</span>
                 </button>
+
+                {isProfileMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-command-900 border border-command-border rounded-xl shadow-2xl py-1.5 z-50 animate-fade-in text-xs font-mono">
+                    <div className="px-3 py-2 border-b border-command-border/60">
+                      <p className="text-[11px] text-slate-400">Signed in as</p>
+                      <p className="text-slate-200 font-semibold truncate">{user.email}</p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        onOpenVaultSettingsModal();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-slate-300 hover:bg-command-800 hover:text-emerald-300 transition-colors text-left"
+                    >
+                      <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Vault Security / Settings</span>
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        setIsProfileMenuOpen(false);
+                        await signOut();
+                        window.location.href = '/login';
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-rose-400 hover:bg-rose-950/40 transition-colors text-left border-t border-command-border/40 mt-1"
+                    >
+                      <LogOut className="w-4 h-4 shrink-0" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

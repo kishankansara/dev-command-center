@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#020617"
+    android:padding="24dp"
+    android:gravity="center">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="DEV COMMAND CENTER"
+        android:textColor="#10B981"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:fontFamily="monospace"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tvSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Zero-Knowledge AES-256-GCM"
+        android:textColor="#94A3B8"
+        android:textSize="12sp"
+        android:fontFamily="monospace"
+        android:layout_marginBottom="32dp" />
+
+    <Button
+        android:id="@+id/btnBiometricAuth"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Authenticate with Biometrics"
+        android:backgroundTint="#059669"
+        android:textColor="#020617"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tvAuthStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ready for biometric challenge"
+        android:textColor="#64748B"
+        android:textSize="12sp"
+        android:fontFamily="monospace" />
+</LinearLayout>

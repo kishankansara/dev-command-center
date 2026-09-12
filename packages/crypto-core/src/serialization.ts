@@ -105,3 +105,33 @@ export async function decryptText(
   const decryptedBytes = await decryptBuffer(ciphertextWithTag, key, iv);
   return bytesToString(decryptedBytes);
 }
+
+/**
+ * Encrypts plaintext with a CryptoKey, returning a serialized envelope with IV and ciphertext.
+ */
+export async function encryptData(plaintext: string, key: CryptoKey): Promise<string> {
+  const iv = generateRandomBytes(CRYPTO_CONSTANTS.IV_BYTES);
+  const plaintextBytes = stringToBytes(plaintext);
+  const ciphertextBytes = await encryptBuffer(plaintextBytes, key, iv);
+
+  // When encrypting with just a key, we provide a placeholder empty salt or random salt for envelope compatibility
+  const salt = generateRandomBytes(CRYPTO_CONSTANTS.SALT_BYTES);
+
+  const payload: EncryptedPayload = {
+    v: CRYPTO_CONSTANTS.PAYLOAD_VERSION,
+    kdf: CRYPTO_CONSTANTS.KDF_NAME,
+    iter: CRYPTO_CONSTANTS.PBKDF2_ITERATIONS,
+    salt: bytesToBase64(salt),
+    iv: bytesToBase64(iv),
+    ct: bytesToBase64(ciphertextBytes),
+  };
+
+  return serializePayload(payload);
+}
+
+/**
+ * Decrypts a serialized envelope using a CryptoKey (throws Error on tag mismatch)
+ */
+export async function decryptData(envelope: string, key: CryptoKey): Promise<string> {
+  return decryptText(envelope, key);
+}

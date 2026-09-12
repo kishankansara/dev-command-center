@@ -119,10 +119,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(devEmailUser);
       return { error: null };
     }
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    if (!error && data.session) {
+      setSession(data.session);
+      setUser(data.session.user);
+    }
     return { error: error ? new Error(error.message) : null };
   }, []);
 

@@ -1,5 +1,16 @@
 import { CRYPTO_CONSTANTS } from './constants';
-import { getCrypto, stringToBytes } from './utils';
+import { getCrypto, stringToBytes, hexToBytes } from './utils';
+
+/**
+ * Derives an AES-GCM-256 CryptoKey from a user passphrase and salt (hex string or Uint8Array)
+ */
+export async function deriveKey(
+  passphrase: string,
+  salt: string | Uint8Array
+): Promise<CryptoKey> {
+  const saltBytes = typeof salt === 'string' ? hexToBytes(salt) : salt;
+  return deriveKeyFromPassphrase(passphrase, saltBytes);
+}
 
 /**
  * Derives an AES-GCM-256 CryptoKey from a user passphrase and salt via PBKDF2-HMAC-SHA256

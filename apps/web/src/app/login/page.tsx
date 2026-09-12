@@ -116,7 +116,7 @@ export default function LoginPage() {
       const { error: signInErr } = await signInWithEmail(testEmail, testPassword);
       if (!signInErr) {
         toast('Logged in as Test Developer! Entering dashboard...', 'success');
-        window.location.href = '/';
+        router.replace('/');
         return;
       }
 
@@ -126,7 +126,7 @@ export default function LoginPage() {
       const { error: signUpErr, data: signUpData } = await signUpWithEmail(testEmail, testPassword);
       if (!signUpErr) {
         toast('Test developer provisioned! Entering dashboard...', 'success');
-        window.location.href = '/';
+        router.replace('/');
         return;
       }
 

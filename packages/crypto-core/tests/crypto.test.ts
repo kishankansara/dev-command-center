@@ -101,4 +101,33 @@ describe('Zero-Knowledge AES-256-GCM Cryptographic Engine', () => {
     const elapsed = Date.now() - startTime;
     assert.ok(elapsed < 500, `Batch operations took ${elapsed}ms, should be very fast with pre-derived key`);
   });
+
+  it('generates salt, derives key, creates canary and verifies successfully', async () => {
+    const { generateSalt, deriveKey, encryptData, verifyPassphrase, CANARY_PAYLOAD } = await import('../src/index');
+
+    const salt = generateSalt();
+    assert.strictEqual(typeof salt, 'string');
+    assert.strictEqual(salt.length, 32, '16 bytes in hex should be 32 hex chars');
+
+    const key = await deriveKey(masterPassphrase, salt);
+    assert.ok(key);
+
+    const canaryEnvelope = await encryptData(CANARY_PAYLOAD, key);
+    assert.strictEqual(typeof canaryEnvelope, 'string');
+
+    // 1. Valid passphrase verification
+    const validResult = await verifyPassphrase(masterPassphrase, salt, canaryEnvelope);
+    assert.strictEqual(validResult.valid, true);
+    assert.ok(validResult.key, 'Valid verification must yield derived CryptoKey');
+
+    // 2. Invalid passphrase verification
+    const invalidResult = await verifyPassphrase('IncorrectPassphrase!999', salt, canaryEnvelope);
+    assert.strictEqual(invalidResult.valid, false);
+    assert.strictEqual(invalidResult.key, undefined);
+
+    // 3. Tampered canary envelope verification
+    const tamperedCanary = canaryEnvelope.substring(0, canaryEnvelope.length - 4) + 'AAAA';
+    const tamperedResult = await verifyPassphrase(masterPassphrase, salt, tamperedCanary);
+    assert.strictEqual(tamperedResult.valid, false);
+  });
 });

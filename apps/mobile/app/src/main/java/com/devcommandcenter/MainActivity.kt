@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
 
         // FR-SEC-02: Screen Leak Prevention
         // Block OS screenshots, screen recordings, and task-switcher previews
@@ -47,6 +48,34 @@ class MainActivity : AppCompatActivity() {
 
         // Ensure Android Keystore hardware key is ready
         keystoreKeyManager.getOrCreateHardwareKey()
+
+        val btnAuth = findViewById<android.widget.Button>(R.id.btnBiometricAuth)
+        val tvStatus = findViewById<android.widget.TextView>(R.id.tvAuthStatus)
+
+        btnAuth?.setOnClickListener {
+            requireBiometricAuthentication(
+                onSuccess = {
+                    tvStatus?.text = "Authenticated: Hardware Keystore Unlocked"
+                    tvStatus?.setTextColor(android.graphics.Color.parseColor("#10B981"))
+                },
+                onError = { err ->
+                    tvStatus?.text = "Auth Failed: $err"
+                    tvStatus?.setTextColor(android.graphics.Color.parseColor("#F43F5E"))
+                }
+            )
+        }
+
+        // Trigger biometric prompt on startup
+        requireBiometricAuthentication(
+            onSuccess = {
+                tvStatus?.text = "Authenticated: Hardware Keystore Unlocked"
+                tvStatus?.setTextColor(android.graphics.Color.parseColor("#10B981"))
+            },
+            onError = { err ->
+                tvStatus?.text = "Auth Failed: $err"
+                tvStatus?.setTextColor(android.graphics.Color.parseColor("#F43F5E"))
+            }
+        )
 
         // Handle OAuth deep link if opened via devcommandcenter://login-callback
         handleOAuthDeepLink(intent)
@@ -89,10 +118,38 @@ class MainActivity : AppCompatActivity() {
         memoryAutoWipeManager.onUserInteraction()
     }
 
+    private var isUnlocked = false
+
     override fun onPause() {
         super.onPause()
         // FR-SEC-03: Immediately clear decrypted secrets from heap memory on app pause
         memoryAutoWipeManager.onAppPaused()
+
+        // Relock on backgrounding
+        isUnlocked = false
+        val tvStatus = findViewById<android.widget.TextView>(R.id.tvAuthStatus)
+        tvStatus?.text = "Vault Locked: Biometrics Required"
+        tvStatus?.setTextColor(android.graphics.Color.parseColor("#F59E0B"))
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Require biometric re-authentication if returning while locked
+        if (!isUnlocked) {
+            val tvStatus = findViewById<android.widget.TextView>(R.id.tvAuthStatus)
+            requireBiometricAuthentication(
+                onSuccess = {
+                    isUnlocked = true
+                    tvStatus?.text = "Authenticated: Hardware Keystore Unlocked"
+                    tvStatus?.setTextColor(android.graphics.Color.parseColor("#10B981"))
+                },
+                onError = { err ->
+                    isUnlocked = false
+                    tvStatus?.text = "Auth Failed: $err"
+                    tvStatus?.setTextColor(android.graphics.Color.parseColor("#F43F5E"))
+                }
+            )
+        }
     }
 
     /**

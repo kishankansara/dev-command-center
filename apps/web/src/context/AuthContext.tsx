@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: () => Promise<{ error: Error | null } | void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null; data: unknown }>;
   signOut: () => Promise<void>;
@@ -80,12 +80,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (origin.includes('0.0.0.0')) {
       origin = origin.replace('0.0.0.0', 'localhost');
     }
-    await supabase.auth.signInWithOAuth({
+    const redirectUrl = `${origin}/auth/callback`;
+    console.log('[OAuth] Initiating Google sign-in with redirectTo:', redirectUrl);
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${origin}/auth/callback`,
+        redirectTo: redirectUrl,
       },
     });
+    if (error) {
+      console.error('[OAuth] signInWithOAuth error:', error);
+      return { error: new Error(error.message) };
+    }
+    if (data?.url && typeof window !== 'undefined') {
+      window.location.href = data.url;
+    }
+    return { error: null };
   }, []);
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {

@@ -82,13 +82,17 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
+      if (result?.error) {
+        toast(result.error.message, 'error');
+        return;
+      }
       if (!isSupabaseConfigured) {
         toast('Signed in via Dev Google OAuth!', 'success');
         router.push('/');
       }
-    } catch {
-      toast('Google authentication failed', 'error');
+    } catch (err: any) {
+      toast(err?.message || 'Google authentication failed', 'error');
     }
   };
 

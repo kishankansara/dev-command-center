@@ -165,12 +165,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     user.id === 'user-google-dev';
 
   const [accounts, setAccounts] = useState<Account[]>(() =>
-    isLeadDev ? INITIAL_DEMO_ACCOUNTS : []
+    (!isSupabaseConfigured && isLeadDev) ? INITIAL_DEMO_ACCOUNTS : []
   );
   const [projects, setProjects] = useState<Project[]>(() =>
-    isLeadDev ? INITIAL_DEMO_PROJECTS : []
+    (!isSupabaseConfigured && isLeadDev) ? INITIAL_DEMO_PROJECTS : []
   );
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(Boolean(isSupabaseConfigured));
   const [isRealtimeActive, setIsRealtimeActive] = useState<boolean>(false);
   const { encrypt } = useCrypto();
 

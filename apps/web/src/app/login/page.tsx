@@ -103,6 +103,36 @@ export default function LoginPage() {
     }
   };
 
+  const handleQuickTestLogin = async () => {
+    setIsSubmitting(true);
+    const testEmail = 'developer@commandcenter.io';
+    const testPassword = 'DevPassword2026!';
+    try {
+      // First attempt sign-in
+      const { error: signInErr } = await signInWithEmail(testEmail, testPassword);
+      if (!signInErr) {
+        toast('Logged in as Test Developer!', 'success');
+        router.push('/');
+        return;
+      }
+
+      // If user doesn't exist yet, sign them up
+      const { error: signUpErr } = await signUpWithEmail(testEmail, testPassword);
+      if (!signUpErr) {
+        toast('Test developer account provisioned & signed in!', 'success');
+        router.push('/');
+        return;
+      }
+
+      // If signup failed because already registered (e.g. password mismatch)
+      toast(signInErr.message || signUpErr?.message || 'Quick login failed', 'error');
+    } catch (err: any) {
+      toast(err?.message || 'Failed to authenticate test developer', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-command-950">
       <div className="w-full max-w-md bg-command-900 border border-command-border rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
@@ -134,6 +164,17 @@ export default function LoginPage() {
               <span>Local development mode active. Click any action to enter dashboard.</span>
             </div>
           )}
+
+          {/* 1-Click Instant Test Developer Login (No OAuth / Zero Redirects) */}
+          <button
+            type="button"
+            disabled={isSubmitting}
+            onClick={handleQuickTestLogin}
+            className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 border border-emerald-400/30 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+          >
+            <Shield className="w-4 h-4 text-emerald-100" />
+            <span>⚡ Sign in as Test Developer</span>
+          </button>
 
           {/* Google OAuth Button */}
           <button

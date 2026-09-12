@@ -119,28 +119,28 @@ export default function LoginPage() {
         return;
       }
 
-      console.warn('[QuickLogin] Sign-in error:', signInErr.message, 'Attempting auto sign-up...');
+      console.warn('[QuickLogin] Sign-in failed:', signInErr.message, '- Attempting auto registration...');
 
-      // If user doesn't exist yet, sign them up
-      const { error: signUpErr } = await signUpWithEmail(testEmail, testPassword);
+      // If sign-in failed, attempt sign-up
+      const { error: signUpErr, data: signUpData } = await signUpWithEmail(testEmail, testPassword);
       if (!signUpErr) {
-        toast('Test developer account provisioned! Entering dashboard...', 'success');
+        toast('Test developer provisioned! Entering dashboard...', 'success');
         window.location.href = '/';
         return;
       }
 
-      const errMessage = signInErr.message || signUpErr?.message || 'Quick login failed';
-      console.error('[QuickLogin] Failed:', errMessage);
-      toast(errMessage, 'error');
+      const detailedMsg = `Sign-in: ${signInErr.message}\nSign-up: ${signUpErr.message}`;
+      console.error('[QuickLogin] Failed:', detailedMsg);
+      toast(`Login Error: ${signInErr.message}`, 'error');
       if (typeof window !== 'undefined') {
-        window.alert(`Login Error: ${errMessage}`);
+        window.alert(`Authentication Details:\n${detailedMsg}`);
       }
     } catch (err: any) {
       const msg = err?.message || 'Failed to authenticate test developer';
       console.error('[QuickLogin] Exception:', err);
       toast(msg, 'error');
       if (typeof window !== 'undefined') {
-        window.alert(`Error: ${msg}`);
+        window.alert(`Exception: ${msg}`);
       }
     } finally {
       setIsSubmitting(false);

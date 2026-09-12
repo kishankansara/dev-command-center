@@ -104,28 +104,38 @@ export default function LoginPage() {
   };
 
   const handleQuickTestLogin = async () => {
+    if (isSubmitting) return;
     setIsSubmitting(true);
     const testEmail = 'developer@commandcenter.io';
     const testPassword = 'DevPassword2026!';
     try {
-      // First attempt sign-in
+      toast('Authenticating test developer...', 'info');
+      // First attempt direct sign-in
       const { error: signInErr } = await signInWithEmail(testEmail, testPassword);
       if (!signInErr) {
-        toast('Logged in as Test Developer!', 'success');
-        router.push('/');
+        toast('Logged in as Test Developer! Entering dashboard...', 'success');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 300);
         return;
       }
+
+      console.warn('[QuickLogin] Sign-in error, attempting sign-up:', signInErr.message);
 
       // If user doesn't exist yet, sign them up
       const { error: signUpErr } = await signUpWithEmail(testEmail, testPassword);
       if (!signUpErr) {
-        toast('Test developer account provisioned & signed in!', 'success');
-        router.push('/');
+        toast('Test developer provisioned & logged in! Entering...', 'success');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 300);
         return;
       }
 
-      // If signup failed because already registered (e.g. password mismatch)
-      toast(signInErr.message || signUpErr?.message || 'Quick login failed', 'error');
+      // If signup failed (e.g. rate limit, or email confirmation required)
+      const errMessage = signInErr.message || signUpErr?.message || 'Quick login failed';
+      console.error('[QuickLogin] Failed:', errMessage);
+      toast(errMessage, 'error');
     } catch (err: any) {
       toast(err?.message || 'Failed to authenticate test developer', 'error');
     } finally {

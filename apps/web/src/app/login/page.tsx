@@ -17,10 +17,33 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // If already logged in, redirect to dashboard
+  // If already logged in or if tokens exist in URL hash fragment, redirect to dashboard
   React.useEffect(() => {
     if (!isLoading && user) {
       router.replace('/');
+      return;
+    }
+
+    // If OAuth returned tokens in the URL hash fragment (#access_token=...)
+    if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+      // Supabase client automatically parses hash tokens; give it a moment to fire onAuthStateChange
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+
+      if (accessToken && refreshToken) {
+        import('@/lib/supabaseClient').then(({ supabase }) => {
+          supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          }).then(({ data, error }) => {
+            if (!error && data.session) {
+              window.history.replaceState(null, '', window.location.pathname);
+              router.replace('/');
+            }
+          });
+        });
+      }
     }
   }, [user, isLoading, router]);
 

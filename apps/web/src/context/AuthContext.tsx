@@ -76,7 +76,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(devGoogleUser);
       return;
     }
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    let origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+    if (origin.includes('0.0.0.0')) {
+      origin = origin.replace('0.0.0.0', 'localhost');
+    }
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

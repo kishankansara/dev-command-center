@@ -2,17 +2,26 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/';
+  const url = new URL(request.url);
+  const code = url.searchParams.get('code');
+  const next = url.searchParams.get('next') ?? '/';
+
+  // Determine correct browser origin (avoid 0.0.0.0 from internal listener)
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const host = forwardedHost || request.headers.get('host') || url.host;
+  const proto = request.headers.get('x-forwarded-proto') || 'http';
+  
+  // If host is 0.0.0.0, fallback to localhost
+  const cleanHost = host.startsWith('0.0.0.0') ? host.replace('0.0.0.0', 'localhost') : host;
+  const baseOrigin = `${proto}://${cleanHost}`;
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      return NextResponse.redirect(`${baseOrigin}${next}`);
     }
   }
 
-  // Return user to an error page or login page with instruction
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
+  // Return user to login page with error param
+  return NextResponse.redirect(`${baseOrigin}/login?error=auth_callback_failed`);
 }

@@ -106,8 +106,9 @@ export default function LoginPage() {
   const handleQuickTestLogin = async () => {
     console.log('[QuickTestLogin] Button clicked');
     setIsSubmitting(true);
-    const testEmail = 'developer@commandcenter.io';
-    const testPassword = 'DevPassword2026!';
+    const testEmail = 'test1@gmail.com';
+    // Supabase Auth enforces minimum 6 characters for passwords by default
+    const testPassword = '123456';
     try {
       toast('Authenticating test developer...', 'info');
       

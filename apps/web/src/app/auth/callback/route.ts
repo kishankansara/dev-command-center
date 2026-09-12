@@ -15,11 +15,15 @@ export async function GET(request: Request) {
   const cleanHost = host.startsWith('0.0.0.0') ? host.replace('0.0.0.0', 'localhost') : host;
   const baseOrigin = `${proto}://${cleanHost}`;
 
+  console.log(`[auth/callback] Incoming request. URL: ${request.url}, host: ${host}, cleanHost: ${cleanHost}, baseOrigin: ${baseOrigin}, hasCode: ${Boolean(code)}`);
+
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      console.log(`[auth/callback] Code exchange successful. Redirecting to ${baseOrigin}${next}`);
       return NextResponse.redirect(`${baseOrigin}${next}`);
     }
+    console.error(`[auth/callback] exchangeCodeForSession failed:`, error);
   }
 
   // Return user to login page with error param

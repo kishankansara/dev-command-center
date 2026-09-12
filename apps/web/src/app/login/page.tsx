@@ -16,6 +16,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [clientOrigin, setClientOrigin] = useState('');
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setClientOrigin(window.location.origin);
+    }
+  }, []);
 
   // If already logged in or if tokens exist in URL hash fragment, redirect to dashboard
   React.useEffect(() => {
@@ -114,6 +121,11 @@ export default function LoginPage() {
             <p className="text-xs text-slate-400">
               Multi-Tenant Context & Zero-Knowledge Vault
             </p>
+            {clientOrigin && (
+              <p className="text-[10px] font-mono text-emerald-400/80 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/20">
+                Callback Host: {clientOrigin}/auth/callback
+              </p>
+            )}
           </div>
 
           {!isSupabaseConfigured && (

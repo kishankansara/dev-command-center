@@ -197,8 +197,10 @@ npm run dev
 
       toast(existingProject ? 'Project updated!' : 'Project registered!', 'success');
       onClose();
-    } catch {
-      toast('Failed to save project', 'error');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to save project';
+      console.error('Project save error:', err);
+      toast(errMsg, 'error');
     } finally {
       setIsSubmitting(false);
     }

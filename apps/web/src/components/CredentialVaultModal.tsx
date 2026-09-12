@@ -130,8 +130,10 @@ export function CredentialVaultModal({
         toast('Encrypted with AES-256-GCM and saved to cloud!', 'success');
       }
       onClose();
-    } catch (err) {
-      toast('Failed to encrypt credentials', 'error');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to encrypt or save credentials';
+      console.error('Save credentials error:', err);
+      toast(errMsg, 'error');
     } finally {
       setIsSaving(false);
     }

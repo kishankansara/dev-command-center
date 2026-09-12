@@ -174,13 +174,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [isRealtimeActive, setIsRealtimeActive] = useState<boolean>(false);
   const { encrypt } = useCrypto();
 
-  const currentUserId = user?.id || 'user-primary-dev';
+  const currentUserId = user?.id || '';
   const tenantId = isLeadDev ? 'user-primary-dev' : currentUserId;
-
-  // Local storage cache key per tenant in dev mode
-  const getStorageKey = useCallback((entity: 'projects' | 'accounts') => {
-    return `dev_command_center_${entity}_${currentUserId || 'anonymous'}`;
-  }, [currentUserId]);
 
   // Load or isolate data when user changes
   useEffect(() => {
@@ -349,9 +344,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [tenantId]);
 
   const addAccount = async (newAcc: Partial<Account>) => {
+    let resolvedUserId = currentUserId;
+
+    if (isSupabaseConfigured) {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user) {
+        throw new Error(userError?.message || 'Authenticated user session not found. Please log in again.');
+      }
+      resolvedUserId = userData.user.id;
+    }
+
     const record: Account = {
       id: crypto.randomUUID(),
-      user_id: currentUserId,
+      user_id: resolvedUserId,
       email: newAcc.email || '',
       provider: newAcc.provider || 'Gmail',
       purpose: newAcc.purpose || null,
@@ -362,9 +367,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     if (isSupabaseConfigured) {
-      const { error } = await supabase.from('accounts').insert(record);
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from('accounts')
+        .insert([record])
+        .select()
+        .single();
+      if (error) {
+        console.error('Insert Account Error:', error.message);
+        throw new Error(error.message);
+      }
+      if (data) {
+        setAccounts((prev) => [data as Account, ...prev.filter((a) => a.id !== data.id)]);
+        return;
+      }
     }
+
     setAccounts((prev) => {
       const next = [record, ...prev];
       syncDevStore('accounts', next);
@@ -374,8 +391,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateAccount = async (id: string, updates: Partial<Account>) => {
     if (isSupabaseConfigured) {
-      const { error } = await supabase.from('accounts').update(updates).eq('id', id);
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from('accounts')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) {
+        console.error('Update Account Error:', error.message);
+        throw new Error(error.message);
+      }
+      if (data) {
+        setAccounts((prev) => prev.map((a) => (a.id === id ? (data as Account) : a)));
+        return;
+      }
     }
     setAccounts((prev) => {
       const next = prev.map((a) => (a.id === id ? { ...a, ...updates } : a));
@@ -387,7 +416,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const deleteAccount = async (id: string) => {
     if (isSupabaseConfigured) {
       const { error } = await supabase.from('accounts').delete().eq('id', id);
-      if (error) throw error;
+      if (error) {
+        console.error('Delete Account Error:', error.message);
+        throw new Error(error.message);
+      }
     }
     setAccounts((prev) => {
       const next = prev.filter((a) => a.id !== id);
@@ -397,9 +429,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const addProject = async (newProj: Partial<Project>) => {
+    let resolvedUserId = currentUserId;
+
+    if (isSupabaseConfigured) {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user) {
+        throw new Error(userError?.message || 'Authenticated user session not found. Please log in again.');
+      }
+      resolvedUserId = userData.user.id;
+    }
+
     const record: Project = {
       id: crypto.randomUUID(),
-      user_id: currentUserId,
+      user_id: resolvedUserId,
       name: newProj.name || 'Untitled Project',
       description: newProj.description || null,
       tags: newProj.tags || [],
@@ -420,9 +462,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     if (isSupabaseConfigured) {
-      const { error } = await supabase.from('projects').insert(record);
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from('projects')
+        .insert([record])
+        .select()
+        .single();
+      if (error) {
+        console.error('Insert Project Error:', error.message);
+        throw new Error(error.message);
+      }
+      if (data) {
+        setProjects((prev) => [data as Project, ...prev.filter((p) => p.id !== data.id)]);
+        return;
+      }
     }
+
     setProjects((prev) => {
       const next = [record, ...prev];
       syncDevStore('projects', next);
@@ -433,8 +487,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const updateProject = async (id: string, updates: Partial<Project>) => {
     const updatedRecord = { ...updates, updated_at: new Date().toISOString() };
     if (isSupabaseConfigured) {
-      const { error } = await supabase.from('projects').update(updatedRecord).eq('id', id);
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from('projects')
+        .update(updatedRecord)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) {
+        console.error('Update Project Error:', error.message);
+        throw new Error(error.message);
+      }
+      if (data) {
+        setProjects((prev) => prev.map((p) => (p.id === id ? (data as Project) : p)));
+        return;
+      }
     }
     setProjects((prev) => {
       const next = prev.map((p) => (p.id === id ? { ...p, ...updatedRecord } : p));
@@ -446,7 +512,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const deleteProject = async (id: string) => {
     if (isSupabaseConfigured) {
       const { error } = await supabase.from('projects').delete().eq('id', id);
-      if (error) throw error;
+      if (error) {
+        console.error('Delete Project Error:', error.message);
+        throw new Error(error.message);
+      }
     }
     setProjects((prev) => {
       const next = prev.filter((p) => p.id !== id);

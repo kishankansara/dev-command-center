@@ -116,8 +116,10 @@ export function AccountModal({
 
       toast(existingAccount ? 'Account updated!' : 'Account registered in vault!', 'success');
       onClose();
-    } catch (err) {
-      toast('Failed to save account', 'error');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to save account';
+      console.error('Account save error:', err);
+      toast(errMsg, 'error');
     } finally {
       setIsSubmitting(false);
     }

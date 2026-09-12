@@ -1,0 +1,19 @@
+{
+  "name": "@dev-command-center/crypto-core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "test": "tsx --test tests/crypto.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@dev-command-center/shared-types": "*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.4.0"
+  }
+}

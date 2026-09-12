@@ -1,0 +1,27 @@
+{
+  "name": "dev-command-center",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Unified Developer Context, Deployment & Identity Manager with Zero-Knowledge Encryption",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run --workspaces --if-present build",
+    "test": "npm run --workspaces --if-present test",
+    "test:matrix": "tsx --test tests/e2e/test_matrix.test.ts",
+    "lint": "npm run --workspaces --if-present lint",
+    "dev:web": "npm run --workspace=@dev-command-center/web dev"
+  },
+  "keywords": [
+    "developer-tools",
+    "zero-knowledge",
+    "aes-256-gcm",
+    "supabase",
+    "nextjs",
+    "security"
+  ],
+  "author": "",
+  "license": "MIT"
+}

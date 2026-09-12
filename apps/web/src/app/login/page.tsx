@@ -104,40 +104,44 @@ export default function LoginPage() {
   };
 
   const handleQuickTestLogin = async () => {
-    if (isSubmitting) return;
+    console.log('[QuickTestLogin] Button clicked');
     setIsSubmitting(true);
     const testEmail = 'developer@commandcenter.io';
     const testPassword = 'DevPassword2026!';
     try {
       toast('Authenticating test developer...', 'info');
+      
       // First attempt direct sign-in
       const { error: signInErr } = await signInWithEmail(testEmail, testPassword);
       if (!signInErr) {
         toast('Logged in as Test Developer! Entering dashboard...', 'success');
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 300);
+        window.location.href = '/';
         return;
       }
 
-      console.warn('[QuickLogin] Sign-in error, attempting sign-up:', signInErr.message);
+      console.warn('[QuickLogin] Sign-in error:', signInErr.message, 'Attempting auto sign-up...');
 
       // If user doesn't exist yet, sign them up
       const { error: signUpErr } = await signUpWithEmail(testEmail, testPassword);
       if (!signUpErr) {
-        toast('Test developer provisioned & logged in! Entering...', 'success');
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 300);
+        toast('Test developer account provisioned! Entering dashboard...', 'success');
+        window.location.href = '/';
         return;
       }
 
-      // If signup failed (e.g. rate limit, or email confirmation required)
       const errMessage = signInErr.message || signUpErr?.message || 'Quick login failed';
       console.error('[QuickLogin] Failed:', errMessage);
       toast(errMessage, 'error');
+      if (typeof window !== 'undefined') {
+        window.alert(`Login Error: ${errMessage}`);
+      }
     } catch (err: any) {
-      toast(err?.message || 'Failed to authenticate test developer', 'error');
+      const msg = err?.message || 'Failed to authenticate test developer';
+      console.error('[QuickLogin] Exception:', err);
+      toast(msg, 'error');
+      if (typeof window !== 'undefined') {
+        window.alert(`Error: ${msg}`);
+      }
     } finally {
       setIsSubmitting(false);
     }
